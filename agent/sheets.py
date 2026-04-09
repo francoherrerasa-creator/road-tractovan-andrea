@@ -32,7 +32,17 @@ def _obtener_hoja():
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
     ]
-    creds = Credentials.from_service_account_file(GOOGLE_CREDENTIALS_FILE, scopes=scopes)
+
+    # En producción: leer credenciales desde variable de entorno
+    # En local: leer desde archivo credentials.json
+    google_creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    if google_creds_json:
+        import json
+        info = json.loads(google_creds_json)
+        creds = Credentials.from_service_account_info(info, scopes=scopes)
+    else:
+        creds = Credentials.from_service_account_file(GOOGLE_CREDENTIALS_FILE, scopes=scopes)
+
     client = gspread.authorize(creds)
     return client.open_by_key(GOOGLE_SHEETS_ID).sheet1
 
