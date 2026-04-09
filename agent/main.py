@@ -10,6 +10,7 @@ import os
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from dotenv import load_dotenv
 
@@ -45,6 +46,19 @@ app = FastAPI(
     title="AgentKit — WhatsApp AI Agent",
     version="1.0.0",
     lifespan=lifespan
+)
+
+# CORS — en producción solo Vercel, en desarrollo cualquier origen
+cors_origins = (
+    ["https://leads-road-tractovan.vercel.app"]
+    if ENVIRONMENT == "production"
+    else ["*"]
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
 )
 
 
