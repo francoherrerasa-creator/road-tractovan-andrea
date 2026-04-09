@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from agent.brain import generar_respuesta
 from agent.memory import inicializar_db, guardar_mensaje, obtener_historial
 from agent.providers import obtener_proveedor
+from agent.sheets import extraer_lead, limpiar_respuesta, guardar_lead_en_sheets
 
 load_dotenv()
 
@@ -85,6 +86,12 @@ async def webhook_handler(request: Request):
 
             # Generar respuesta con Claude
             respuesta = await generar_respuesta(msg.texto, historial)
+
+            # Detectar si Andrea completó la calificación de un lead
+            lead = extraer_lead(respuesta)
+            if lead:
+                guardar_lead_en_sheets(lead, msg.telefono)
+                respuesta = limpiar_respuesta(respuesta)
 
             # Guardar mensaje del usuario Y respuesta del agente en memoria
             await guardar_mensaje(msg.telefono, "user", msg.texto)

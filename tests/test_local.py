@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agent.brain import generar_respuesta
 from agent.memory import inicializar_db, guardar_mensaje, obtener_historial, limpiar_historial
+from agent.sheets import extraer_lead, limpiar_respuesta, guardar_lead_en_sheets
 
 TELEFONO_TEST = "test-local-001"
 
@@ -60,9 +61,16 @@ async def main():
         historial = await obtener_historial(TELEFONO_TEST)
 
         # Generar respuesta
-        print("\nAndrea: ", end="", flush=True)
         respuesta = await generar_respuesta(mensaje, historial)
-        print(respuesta)
+
+        # Detectar si Andrea completó la calificación de un lead
+        lead = extraer_lead(respuesta)
+        if lead:
+            print("\n[LEAD DETECTADO — Guardando en Google Sheets...]")
+            guardar_lead_en_sheets(lead, TELEFONO_TEST)
+            respuesta = limpiar_respuesta(respuesta)
+
+        print(f"\nAndrea: {respuesta}")
         print()
 
         # Guardar mensaje del usuario y respuesta del agente
