@@ -98,3 +98,62 @@ def guardar_lead_en_sheets(lead: dict, telefono: str) -> bool:
     except Exception as e:
         logger.error(f"Error guardando lead en Google Sheets: {e}")
         return False
+
+
+def _calcular_score(urgencia: str) -> int:
+    """Calcula score del lead basado en urgencia."""
+    urgencia_lower = urgencia.lower()
+    # Urgencia alta: palabras que indican inmediatez
+    if any(p in urgencia_lower for p in ["hoy", "inmediata", "urgente", "esta semana", "lo antes posible", "ya", "cuanto antes"]):
+        return 95
+    # Urgencia media: este mes o pronto
+    if any(p in urgencia_lower for p in ["este mes", "pronto", "semanas", "quincena", "15 dias"]):
+        return 70
+    # Urgencia baja: sin prisa o a futuro
+    if any(p in urgencia_lower for p in ["no hay prisa", "cotizar", "explorando", "siguiente trimestre", "futuro"]):
+        return 40
+    # Default: media
+    return 65
+
+
+def obtener_leads() -> list[dict]:
+    """
+    Lee todos los leads de Google Sheets y los devuelve en formato JSON
+    para el dashboard de React.
+    """
+    try:
+        hoja = _obtener_hoja()
+        registros = hoja.get_all_records()
+
+        leads = []
+        for i, row in enumerate(registros, start=1):
+            urgencia = row.get("urgencia", "")
+            fecha = row.get("fecha", "")
+
+            lead = {
+                "id": i,
+                "empresa": row.get("empresa", ""),
+                "contacto": row.get("nombre", ""),
+                "telefono": row.get("telefono", ""),
+                "email": row.get("email", ""),
+                "ciudad": "",
+                "flota": row.get("flota", ""),
+                "tipo_carga": row.get("carga", ""),
+                "urgencia": urgencia,
+                "servicio": row.get("servicio", ""),
+                "stage": "nuevo_contacto",
+                "fecha_entrada": fecha,
+                "fecha_stage": fecha,
+                "notas": row.get("notas", ""),
+                "score": _calcular_score(urgencia),
+                "historial": [
+                    {"fecha": fecha, "evento": "Lead capturado por Andrea via WhatsApp"}
+                ],
+            }
+            leads.append(lead)
+
+        return leads
+
+    except Exception as e:
+        logger.error(f"Error leyendo leads de Google Sheets: {e}")
+        return []

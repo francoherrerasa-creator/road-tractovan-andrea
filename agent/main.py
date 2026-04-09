@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from agent.brain import generar_respuesta
 from agent.memory import inicializar_db, guardar_mensaje, obtener_historial
 from agent.providers import obtener_proveedor
-from agent.sheets import extraer_lead, limpiar_respuesta, guardar_lead_en_sheets
+from agent.sheets import extraer_lead, limpiar_respuesta, guardar_lead_en_sheets, obtener_leads
 
 load_dotenv()
 
@@ -52,6 +52,13 @@ app = FastAPI(
 async def health_check():
     """Endpoint de salud para Railway/monitoreo."""
     return {"status": "ok", "service": "agentkit"}
+
+
+@app.get("/leads")
+async def listar_leads():
+    """Devuelve todos los leads de Google Sheets en formato JSON para el dashboard."""
+    leads = obtener_leads()
+    return {"total": len(leads), "leads": leads}
 
 
 @app.get("/webhook")
