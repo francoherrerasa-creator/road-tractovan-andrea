@@ -75,12 +75,18 @@ async def listar_leads():
     return {"total": len(leads), "leads": leads}
 
 
-@app.get("/webhook")
+@app.api_route("/webhook", methods=["GET", "HEAD"])
 async def webhook_verificacion(request: Request):
-    """Verificación GET del webhook (requerido por Meta Cloud API, no-op para otros)."""
+    """
+    Verificación del webhook.
+    Whapi hace GET/HEAD para confirmar que el endpoint existe antes de mandar mensajes.
+    Meta Cloud API hace GET con hub.challenge para validar la suscripción.
+    """
+    # Meta Cloud API: responder con hub.challenge si aplica
     resultado = await proveedor.validar_webhook(request)
     if resultado is not None:
         return PlainTextResponse(str(resultado))
+    # Whapi y otros: 200 OK basta para confirmar que el webhook existe
     return {"status": "ok"}
 
 
