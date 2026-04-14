@@ -20,7 +20,7 @@ GOOGLE_SHEETS_ID = os.getenv("GOOGLE_SHEETS_ID")
 GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
 
 # Columnas esperadas en la hoja (en orden)
-COLUMNAS = ["fecha", "nombre", "empresa", "flota", "carga", "servicio", "urgencia", "email", "notas", "telefono"]
+COLUMNAS = ["fecha", "nombre", "telefono", "empresa", "producto_buscado", "presupuesto", "nivel_interes", "urgencia", "email", "etapa", "siguiente_accion", "notas"]
 
 
 def _obtener_hoja():
@@ -44,7 +44,7 @@ def _obtener_hoja():
         creds = Credentials.from_service_account_file(GOOGLE_CREDENTIALS_FILE, scopes=scopes)
 
     client = gspread.authorize(creds)
-    return client.open_by_key(GOOGLE_SHEETS_ID).sheet1
+    return client.open_by_key(GOOGLE_SHEETS_ID).worksheet("Inbound")
 
 
 def extraer_lead(respuesta: str) -> dict | None:
@@ -81,14 +81,16 @@ def guardar_lead_en_sheets(lead: dict, telefono: str) -> bool:
         fila = [
             datetime.now().strftime("%Y-%m-%d %H:%M"),
             lead.get("nombre", ""),
+            telefono,
             lead.get("empresa", ""),
-            lead.get("flota", ""),
-            lead.get("carga", ""),
-            lead.get("servicio", ""),
+            lead.get("producto_buscado", ""),
+            lead.get("presupuesto", ""),
+            lead.get("nivel_interes", ""),
             lead.get("urgencia", ""),
             lead.get("email", ""),
+            "Nuevo Contacto",
+            "Revisar y contactar",
             lead.get("notas", ""),
-            telefono,
         ]
 
         hoja.append_row(fila, value_input_option="USER_ENTERED")
@@ -117,34 +119,32 @@ def _calcular_score(urgencia: str) -> int:
 
 
 def obtener_leads() -> list[dict]:
-    """
-    Lee todos los leads de Google Sheets y los devuelve en formato JSON
-    para el dashboard de React.
-    """
+    """Lee todos los leads de la pestaña Inbound y los devuelve en formato JSON para el dashboard."""
     try:
         hoja = _obtener_hoja()
         registros = hoja.get_all_records()
 
         leads = []
         for i, row in enumerate(registros, start=1):
-            urgencia = row.get("urgencia", "")
-            fecha = row.get("fecha", "")
+            urgencia = row.get("Urgencia", "")
+            fecha = row.get("Fecha", "")
+            nivel = row.get("Nivel de Interés", "")
 
             lead = {
                 "id": i,
-                "empresa": row.get("empresa", ""),
-                "contacto": row.get("nombre", ""),
-                "telefono": row.get("telefono", ""),
-                "email": row.get("email", ""),
-                "ciudad": "",
-                "flota": row.get("flota", ""),
-                "tipo_carga": row.get("carga", ""),
+                "empresa": row.get("Empresa", ""),
+                "contacto": row.get("Nombre", ""),
+                "telefono": row.get("Teléfono", ""),
+                "email": row.get("Email", ""),
+                "producto_buscado": row.get("Producto Buscado", ""),
+                "presupuesto": row.get("Presupuesto", ""),
+                "nivel_interes": nivel,
                 "urgencia": urgencia,
-                "servicio": row.get("servicio", ""),
-                "stage": "nuevo_contacto",
+                "stage": row.get("Etapa", "Nuevo Contacto"),
+                "siguiente_accion": row.get("Siguiente Acción", ""),
                 "fecha_entrada": fecha,
                 "fecha_stage": fecha,
-                "notas": row.get("notas", ""),
+                "notas": row.get("Notas", ""),
                 "score": _calcular_score(urgencia),
                 "historial": [
                     {"fecha": fecha, "evento": "Lead capturado por Andrea via WhatsApp"}

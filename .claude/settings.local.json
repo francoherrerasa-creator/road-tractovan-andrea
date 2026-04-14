@@ -18,7 +18,11 @@
       "Write",
       "Edit",
       "Glob",
-      "Grep"
+      "Grep",
+      "Bash(python -c \"from agent.main import app; print\\([r.path for r in app.routes if 'webhook' in str\\(r.path\\)]\\)\")",
+      "Bash(python -c \"from agent.main import app; print\\(sorted\\({\\(r.path, tuple\\(sorted\\(r.methods\\)\\)\\) for r in app.routes if 'webhook' in str\\(r.path\\)}\\)\\)\")",
+      "Bash(python -c \"import yaml; yaml.safe_load\\(open\\('config/prompts.yaml', encoding='utf-8'\\)\\); print\\('YAML valido'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('agent/sheets.py', encoding='utf-8'\\).read\\(\\)\\); print\\('sintaxis ok'\\)\")"
     ]
   }
 }
