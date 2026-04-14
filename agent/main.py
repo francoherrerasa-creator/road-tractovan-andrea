@@ -17,7 +17,14 @@ from dotenv import load_dotenv
 from agent.brain import generar_respuesta
 from agent.memory import inicializar_db, guardar_mensaje, obtener_historial
 from agent.providers import obtener_proveedor
-from agent.sheets import extraer_lead, limpiar_respuesta, guardar_lead_en_sheets, obtener_leads
+from agent.sheets import (
+    extraer_lead,
+    limpiar_respuesta,
+    obtener_leads,
+    crear_lead_inicial,
+    buscar_lead_por_telefono,
+    actualizar_lead,
+)
 
 load_dotenv()
 
@@ -109,6 +116,14 @@ async def webhook_handler(request: Request):
 
             logger.info(f"Mensaje de {msg.telefono}: {msg.texto}")
 
+            # Si es un número nuevo, crear fila inicial en Sheets.
+            # Envuelto en try/except: si Sheets falla, el chat sigue funcionando.
+            try:
+                if buscar_lead_por_telefono(msg.telefono) is None:
+                    crear_lead_inicial(msg.telefono, msg.texto)
+            except Exception as e:
+                logger.error(f"Error verificando/creando lead inicial: {e}")
+
             # Obtener historial ANTES de guardar el mensaje actual
             # (brain.py agrega el mensaje actual, evitando duplicados)
             historial = await obtener_historial(msg.telefono)
@@ -116,10 +131,14 @@ async def webhook_handler(request: Request):
             # Generar respuesta con Claude
             respuesta = await generar_respuesta(msg.texto, historial)
 
-            # Detectar si Andrea completó la calificación de un lead
+            # Si Andrea emitió LEAD_COMPLETO, actualizar la fila con los datos finales.
+            # También envuelto en try/except por seguridad.
             lead = extraer_lead(respuesta)
             if lead:
-                guardar_lead_en_sheets(lead, msg.telefono)
+                try:
+                    actualizar_lead(msg.telefono, lead)
+                except Exception as e:
+                    logger.error(f"Error actualizando lead: {e}")
                 respuesta = limpiar_respuesta(respuesta)
 
             # Guardar mensaje del usuario Y respuesta del agente en memoria

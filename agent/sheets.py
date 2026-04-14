@@ -70,36 +70,121 @@ def limpiar_respuesta(respuesta: str) -> str:
     return limpia
 
 
-def guardar_lead_en_sheets(lead: dict, telefono: str) -> bool:
+def buscar_lead_por_telefono(telefono: str) -> int | None:
     """
-    Guarda un lead calificado en Google Sheets.
-    Retorna True si fue exitoso.
+    Busca un lead por número de teléfono en la columna C de la pestaña Inbound.
+    Retorna el número de fila (1-indexed) si lo encuentra, None si no.
     """
     try:
         hoja = _obtener_hoja()
-
-        fila = [
-            datetime.now().strftime("%Y-%m-%d %H:%M"),
-            lead.get("nombre", ""),
-            telefono,
-            lead.get("empresa", ""),
-            lead.get("producto_buscado", ""),
-            lead.get("presupuesto", ""),
-            lead.get("nivel_interes", ""),
-            lead.get("urgencia", ""),
-            lead.get("email", ""),
-            "Nuevo Contacto",
-            "Revisar y contactar",
-            lead.get("notas", ""),
-        ]
-
-        hoja.append_row(fila, value_input_option="USER_ENTERED")
-        logger.info(f"Lead guardado en Google Sheets: {lead.get('nombre', '')} — {lead.get('empresa', '')}")
-        return True
-
+        # Columna C = Teléfono (índice 3). Saltar fila 1 (headers).
+        telefonos = hoja.col_values(3)
+        for i, tel in enumerate(telefonos[1:], start=2):
+            if tel == telefono:
+                return i
+        return None
     except Exception as e:
-        logger.error(f"Error guardando lead en Google Sheets: {e}")
+        logger.error(f"Error buscando lead por telefono: {e}")
+        return None
+
+
+def crear_lead_inicial(telefono: str, primer_mensaje: str) -> bool:
+    """
+    Crea una fila inicial cuando un número escribe por primera vez.
+    Solo se llenan: Fecha, Teléfono, Etapa, Siguiente Acción y Notas (con el primer mensaje).
+    """
+    try:
+        hoja = _obtener_hoja()
+        fila = [
+            datetime.now().strftime("%Y-%m-%d %H:%M"),  # Fecha
+            "",                       # Nombre
+            telefono,                 # Teléfono
+            "",                       # Empresa
+            "",                       # Producto Buscado
+            "",                       # Presupuesto
+            "",                       # Nivel de Interés
+            "",                       # Urgencia
+            "",                       # Email
+            "Nuevo Contacto",         # Etapa
+            "Andrea conversando",     # Siguiente Acción
+            primer_mensaje,           # Notas
+        ]
+        hoja.append_row(fila, value_input_option="USER_ENTERED")
+        logger.info(f"Lead inicial creado para {telefono}")
+        return True
+    except Exception as e:
+        logger.error(f"Error creando lead inicial: {e}")
         return False
+
+
+def actualizar_lead(telefono: str, lead: dict) -> bool:
+    """
+    Actualiza la fila existente del lead identificado por teléfono.
+    Solo sobrescribe campos que vengan no-vacíos en el dict, conservando lo previo.
+    Cambia Etapa a "Calificado" y Siguiente Acción a "Revisar y contactar".
+    Si no encuentra la fila, hace append como fallback.
+    """
+    try:
+        fila_num = buscar_lead_por_telefono(telefono)
+        hoja = _obtener_hoja()
+
+        if fila_num is None:
+            # Fallback: no existe la fila, crearla con todos los datos disponibles
+            logger.warning(f"No existe fila para {telefono}, creando nueva como fallback")
+            fila = [
+                datetime.now().strftime("%Y-%m-%d %H:%M"),
+                lead.get("nombre", ""),
+                telefono,
+                lead.get("empresa", ""),
+                lead.get("producto_buscado", ""),
+                lead.get("presupuesto", ""),
+                lead.get("nivel_interes", ""),
+                lead.get("urgencia", ""),
+                lead.get("email", ""),
+                "Calificado",
+                "Revisar y contactar",
+                lead.get("notas", ""),
+            ]
+            hoja.append_row(fila, value_input_option="USER_ENTERED")
+            return True
+
+        # Leer fila actual y mergear: solo sobrescribir si el nuevo valor no está vacío
+        fila_actual = hoja.row_values(fila_num)
+        while len(fila_actual) < 12:
+            fila_actual.append("")
+
+        nuevos_valores = [
+            fila_actual[0],  # Fecha (mantener original)
+            lead.get("nombre", "") or fila_actual[1],
+            telefono,
+            lead.get("empresa", "") or fila_actual[3],
+            lead.get("producto_buscado", "") or fila_actual[4],
+            lead.get("presupuesto", "") or fila_actual[5],
+            lead.get("nivel_interes", "") or fila_actual[6],
+            lead.get("urgencia", "") or fila_actual[7],
+            lead.get("email", "") or fila_actual[8],
+            "Calificado",                  # Etapa siempre pasa a Calificado
+            "Revisar y contactar",         # Siguiente Acción siempre actualizada
+            lead.get("notas", "") or fila_actual[11],
+        ]
+        hoja.update(
+            f"A{fila_num}:L{fila_num}",
+            [nuevos_valores],
+            value_input_option="USER_ENTERED",
+        )
+        logger.info(f"Lead actualizado en fila {fila_num}: {telefono}")
+        return True
+    except Exception as e:
+        logger.error(f"Error actualizando lead: {e}")
+        return False
+
+
+def guardar_lead_en_sheets(lead: dict, telefono: str) -> bool:
+    """
+    Wrapper compatible con código antiguo. Ahora actualiza la fila existente
+    en vez de hacer append. Si no existe, hace fallback a append.
+    """
+    return actualizar_lead(telefono, lead)
 
 
 def _calcular_score(urgencia: str) -> int:
