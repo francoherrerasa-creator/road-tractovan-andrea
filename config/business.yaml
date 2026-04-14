@@ -2,14 +2,14 @@
 negocio:
   nombre: "Road Tractovan"
   descripcion: "Empresa mexicana especializada en la venta y arrendamiento de tractocamiones. Venta de unidades nuevas y seminuevas de las principales marcas (Freightliner, International, Volkswagen). Arrendamiento puro y financiado con contratos flexibles. Venta de cajas secas, cajas refrigeradas, plataformas y llantas. Reparación y mantenimiento via Road Collision."
-  horario: "Andrea atiende 24/7. Equipo humano: Lunes a Viernes 9am a 5pm, Sábados 10am a 2pm (hora de México). Fuera de horario, Andrea recopila información y un asesor contacta al cliente el siguiente día hábil."
+  horario: "Sofía atiende 24/7. Equipo humano: Lunes a Viernes 9am a 5pm, Sábados 10am a 2pm (hora de México). Fuera de horario, Sofía recopila información y un asesor contacta al cliente el siguiente día hábil."
   ubicacion: "Antiguo Camino de las Ánimas s/n, Tlacateco, 54605 Tepotzotlán, Estado de México"
   telefono: "55 2528 0531"
   email: "[email protected]"
   sitio_web: "www.roadtractovan.com.mx"
 
 agente:
-  nombre: "Andrea"
+  nombre: "Sofía"
   tono: "Profesional pero amigable, con enfoque en ventas y empatía con el cliente"
   casos_de_uso:
     - "Responder preguntas frecuentes sobre inventario, precios, garantías y servicios"

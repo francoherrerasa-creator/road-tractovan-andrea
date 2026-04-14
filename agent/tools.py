@@ -3,7 +3,7 @@
 
 """
 Herramientas específicas de Road Tractovan.
-Extienden las capacidades de Andrea más allá de responder texto.
+Extienden las capacidades de Sofía más allá de responder texto.
 """
 
 import os

@@ -27,7 +27,7 @@ async def main():
     print()
     print("=" * 55)
     print("   AgentKit — Test Local")
-    print("   Agente: Andrea | Road Tractovan")
+    print("   Agente: Sofía | Road Tractovan")
     print("=" * 55)
     print()
     print("  Escribe mensajes como si fueras un cliente.")
@@ -63,14 +63,14 @@ async def main():
         # Generar respuesta
         respuesta = await generar_respuesta(mensaje, historial)
 
-        # Detectar si Andrea completó la calificación de un lead
+        # Detectar si Sofía completó la calificación de un lead
         lead = extraer_lead(respuesta)
         if lead:
             print("\n[LEAD DETECTADO — Guardando en Google Sheets...]")
             guardar_lead_en_sheets(lead, TELEFONO_TEST)
             respuesta = limpiar_respuesta(respuesta)
 
-        print(f"\nAndrea: {respuesta}")
+        print(f"\nSofía: {respuesta}")
         print()
 
         # Guardar mensaje del usuario y respuesta del agente

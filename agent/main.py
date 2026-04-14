@@ -133,7 +133,7 @@ async def webhook_handler(request: Request):
             # Generar respuesta con Claude
             respuesta = await generar_respuesta(msg.texto, historial)
 
-            # Si Andrea emitió LEAD_COMPLETO, actualizar la fila con los datos finales.
+            # Si Sofía emitió LEAD_COMPLETO, actualizar la fila con los datos finales.
             # También envuelto en try/except por seguridad.
             lead = extraer_lead(respuesta)
             if lead:

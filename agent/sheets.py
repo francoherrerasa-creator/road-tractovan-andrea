@@ -3,7 +3,7 @@
 
 """
 Guarda leads calificados en Google Sheets usando gspread.
-Se activa cuando Andrea detecta LEAD_COMPLETO en la conversación.
+Se activa cuando Sofía detecta LEAD_COMPLETO en la conversación.
 """
 
 import os
@@ -49,7 +49,7 @@ def _obtener_hoja():
 
 def extraer_lead(respuesta: str) -> dict | None:
     """
-    Busca el bloque [LEAD_COMPLETO]{...}[/LEAD_COMPLETO] en la respuesta de Andrea.
+    Busca el bloque [LEAD_COMPLETO]{...}[/LEAD_COMPLETO] en la respuesta de Sofía.
     Retorna el dict con los datos del lead, o None si no hay bloque.
     """
     patron = r"\[LEAD_COMPLETO\](.*?)\[/LEAD_COMPLETO\]"
@@ -138,7 +138,7 @@ def crear_lead_inicial(telefono: str, primer_mensaje: str) -> bool:
             "",                       # Urgencia
             "",                       # Email
             "Nuevo Contacto",         # Etapa
-            "Andrea conversando",     # Siguiente Acción
+            "Sofía conversando",      # Siguiente Acción
             primer_mensaje,           # Notas
         ]
         hoja.append_row(fila, value_input_option="USER_ENTERED")
@@ -298,7 +298,7 @@ def obtener_leads() -> list[dict]:
                 "notas": row.get("Notas", ""),
                 "score": _calcular_score(urgencia),
                 "historial": [
-                    {"fecha": fecha, "evento": "Lead capturado por Andrea via WhatsApp"}
+                    {"fecha": fecha, "evento": "Lead capturado por Sofía via WhatsApp"}
                 ],
             }
             leads.append(lead)
