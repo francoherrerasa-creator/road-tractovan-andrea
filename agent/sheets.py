@@ -85,31 +85,34 @@ def limpiar_respuesta(respuesta: str) -> str:
 
 
 def _limpiar_telefono(telefono: str) -> str:
-    """Convierte 5215543503382@s.whatsapp.net → +52 55 4350 3382"""
-    # Quitar @s.whatsapp.net
+    """
+    Convierte 5215543503382@s.whatsapp.net → 525543503382 (solo dígitos, canónico).
+    Sin prefijo '+' porque Google Sheets en USER_ENTERED mode parsea
+    cadenas '+dígitos' como números positivos y descarta el signo, rompiendo
+    la comparación al leer de vuelta con col_values().
+    """
     limpio = telefono.split("@")[0]
-    # Quitar prefijo 521 → 52 (México agrega un 1 extra en WhatsApp)
     if limpio.startswith("521") and len(limpio) == 13:
         limpio = "52" + limpio[3:]
-    # Formatear con +
-    return f"+{limpio}"
+    return limpio
 
 
 def buscar_lead_por_telefono(telefono: str) -> int | None:
     """
     Busca un lead por número de teléfono en la columna C de la pestaña Inbound.
-    Acepta tanto el formato raw (5215543503382@s.whatsapp.net) como el
-    formato limpio (+525543503382) y retorna la fila si encuentra cualquiera.
+    Matchea contra 3 formatos para encontrar filas de cualquier época:
+      1. raw con suffix:     5215543503382@s.whatsapp.net
+      2. digits-only actual: 525543503382
+      3. con + legado:       +525543503382  (filas creadas antes del fix)
     """
     try:
         hoja = _obtener_hoja()
-        # Normalizamos a ambos formatos y hacemos match contra cualquiera de los dos
-        limpio = _limpiar_telefono(telefono)
-        formatos = {telefono, limpio}
+        digits = _limpiar_telefono(telefono)
+        formatos = {telefono, digits, f"+{digits}"}
         # Columna C = Teléfono (índice 3). Saltar fila 1 (headers).
         telefonos = hoja.col_values(3)
         for i, tel in enumerate(telefonos[1:], start=2):
-            if tel in formatos:
+            if str(tel).strip() in formatos:
                 return i
         return None
     except Exception as e:
@@ -217,15 +220,18 @@ def actualizar_lead_parcial(telefono: str, datos: dict) -> bool:
         if not fila_num:
             return False
 
-        # Mapeo de campo del JSON a columna en Sheets
+        # Mapeo de campo del JSON a columna en Sheets (12 columnas A-L)
         campo_a_columna = {
-            "nombre": 2,            # B
-            "empresa": 4,           # D
-            "producto_buscado": 5,  # E
-            "presupuesto": 6,       # F
-            "nivel_interes": 7,     # G
-            "urgencia": 8,          # H
-            "email": 9,             # I
+            "nombre": 2,             # B
+            "empresa": 4,            # D
+            "producto_buscado": 5,   # E
+            "presupuesto": 6,        # F
+            "nivel_interes": 7,      # G
+            "urgencia": 8,           # H
+            "email": 9,              # I
+            "etapa": 10,             # J
+            "siguiente_accion": 11,  # K
+            "notas": 12,             # L
         }
 
         for campo, valor in datos.items():
