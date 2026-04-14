@@ -8,6 +8,7 @@ Funciona con cualquier proveedor (Whapi, Meta, Twilio) gracias a la capa de prov
 
 import os
 import logging
+import httpx
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -82,6 +83,44 @@ async def listar_leads():
     """Devuelve todos los leads de Google Sheets en formato JSON para el dashboard."""
     leads = obtener_leads()
     return {"total": len(leads), "leads": leads}
+
+
+@app.post("/briefing")
+async def briefing_proxy(request: Request):
+    """
+    Proxy a la API de Anthropic para generar briefings desde el dashboard.
+    Recibe {model, messages, max_tokens} y lo reenvía a api.anthropic.com/v1/messages
+    usando la ANTHROPIC_API_KEY del servidor (para no exponerla al frontend).
+    """
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY no configurada")
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Body JSON invalido")
+
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            r = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                json=body,
+                headers=headers,
+            )
+        if r.status_code != 200:
+            logger.error(f"Error Anthropic API ({r.status_code}): {r.text}")
+            raise HTTPException(status_code=r.status_code, detail=r.text)
+        return r.json()
+    except httpx.HTTPError as e:
+        logger.error(f"Error HTTP al llamar Anthropic: {e}")
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @app.api_route("/webhook", methods=["GET", "HEAD"])
