@@ -63,10 +63,24 @@ def extraer_lead(respuesta: str) -> dict | None:
         return None
 
 
+def extraer_lead_update(respuesta: str) -> dict | None:
+    """Busca [LEAD_UPDATE]{...}[/LEAD_UPDATE] en la respuesta."""
+    patron = r"\[LEAD_UPDATE\](.*?)\[/LEAD_UPDATE\]"
+    match = re.search(patron, respuesta, re.DOTALL)
+    if not match:
+        return None
+    try:
+        return json.loads(match.group(1).strip())
+    except json.JSONDecodeError as e:
+        logger.error(f"Error parseando JSON de lead update: {e}")
+        return None
+
+
 def limpiar_respuesta(respuesta: str) -> str:
-    """Remueve el bloque [LEAD_COMPLETO]...[/LEAD_COMPLETO] de la respuesta antes de enviarla al cliente."""
+    """Remueve los bloques [LEAD_COMPLETO]...[/LEAD_COMPLETO] y [LEAD_UPDATE]...[/LEAD_UPDATE] de la respuesta antes de enviarla al cliente."""
     patron = r"\[LEAD_COMPLETO\].*?\[/LEAD_COMPLETO\]"
     limpia = re.sub(patron, "", respuesta, flags=re.DOTALL).strip()
+    limpia = re.sub(r"\[LEAD_UPDATE\].*?\[/LEAD_UPDATE\]", "", limpia, flags=re.DOTALL).strip()
     return limpia
 
 
@@ -176,6 +190,36 @@ def actualizar_lead(telefono: str, lead: dict) -> bool:
         return True
     except Exception as e:
         logger.error(f"Error actualizando lead: {e}")
+        return False
+
+
+def actualizar_lead_parcial(telefono: str, datos: dict) -> bool:
+    """Actualiza solo los campos proporcionados en la fila del lead, sin cambiar la etapa."""
+    try:
+        hoja = _obtener_hoja()
+        fila_num = buscar_lead_por_telefono(telefono)
+        if not fila_num:
+            return False
+
+        # Mapeo de campo del JSON a columna en Sheets
+        campo_a_columna = {
+            "nombre": 2,            # B
+            "empresa": 4,           # D
+            "producto_buscado": 5,  # E
+            "presupuesto": 6,       # F
+            "nivel_interes": 7,     # G
+            "urgencia": 8,          # H
+            "email": 9,             # I
+        }
+
+        for campo, valor in datos.items():
+            if campo in campo_a_columna and valor:
+                hoja.update_cell(fila_num, campo_a_columna[campo], valor)
+
+        logger.info(f"Lead actualizado parcialmente para {telefono}: {list(datos.keys())}")
+        return True
+    except Exception as e:
+        logger.error(f"Error actualizando lead parcialmente: {e}")
         return False
 
 

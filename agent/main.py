@@ -19,11 +19,13 @@ from agent.memory import inicializar_db, guardar_mensaje, obtener_historial
 from agent.providers import obtener_proveedor
 from agent.sheets import (
     extraer_lead,
+    extraer_lead_update,
     limpiar_respuesta,
     obtener_leads,
     crear_lead_inicial,
     buscar_lead_por_telefono,
     actualizar_lead,
+    actualizar_lead_parcial,
 )
 
 load_dotenv()
@@ -140,6 +142,16 @@ async def webhook_handler(request: Request):
                 except Exception as e:
                     logger.error(f"Error actualizando lead: {e}")
                 respuesta = limpiar_respuesta(respuesta)
+
+            # Detectar actualizaciones parciales de datos
+            if not lead:  # Solo si no hubo LEAD_COMPLETO
+                lead_update = extraer_lead_update(respuesta)
+                if lead_update:
+                    try:
+                        actualizar_lead_parcial(msg.telefono, lead_update)
+                    except Exception as e:
+                        logger.error(f"Error actualizando lead parcialmente: {e}")
+                    respuesta = limpiar_respuesta(respuesta)
 
             # Guardar mensaje del usuario Y respuesta del agente en memoria
             await guardar_mensaje(msg.telefono, "user", msg.texto)

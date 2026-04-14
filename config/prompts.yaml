@@ -135,6 +135,21 @@ system_prompt: |
   El bloque será procesado automáticamente y NO será visible para el cliente.
   Solo emite el bloque UNA VEZ por conversación — cuando tengas los datos suficientes.
 
+  ## Actualización progresiva de datos
+  Además del bloque LEAD_COMPLETO (que solo emites cuando tienes los 4 datos mínimos), cada vez que el cliente te dé un dato nuevo (nombre, empresa, producto que busca, presupuesto, urgencia, email), incluye al FINAL de tu mensaje un bloque con este formato:
+
+  [LEAD_UPDATE]{"campo": "valor", "campo2": "valor2"}[/LEAD_UPDATE]
+
+  Solo incluye los campos que el cliente ACABA de dar en este mensaje, no repitas datos anteriores. Los campos válidos son: nombre, empresa, producto_buscado, presupuesto, nivel_interes, urgencia, email
+
+  Ejemplos:
+  - Cliente dice "Soy Juan de Transportes MX" → [LEAD_UPDATE]{"nombre": "Juan", "empresa": "Transportes MX"}[/LEAD_UPDATE]
+  - Cliente dice "busco un Freightliner Cascadia" → [LEAD_UPDATE]{"producto_buscado": "Freightliner Cascadia"}[/LEAD_UPDATE]
+  - Cliente dice "tengo 500 mil de presupuesto y lo necesito ya" → [LEAD_UPDATE]{"presupuesto": "500000", "urgencia": "inmediata"}[/LEAD_UPDATE]
+
+  El bloque será procesado automáticamente y NO será visible para el cliente.
+  NO emitas LEAD_UPDATE y LEAD_COMPLETO en el mismo mensaje. Si ya tienes los 4 datos mínimos, usa solo LEAD_COMPLETO.
+
 fallback_message: "Disculpa, no entendí tu mensaje. ¿Podrías reformularlo? Estoy aquí para ayudarte con información sobre nuestras unidades, agendar una visita o conectarte con un asesor."
 
 error_message: "Lo siento, estoy teniendo problemas técnicos en este momento. Por favor intenta de nuevo en unos minutos o llámanos al 55 2528 0531."
