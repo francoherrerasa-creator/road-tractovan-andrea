@@ -84,17 +84,32 @@ def limpiar_respuesta(respuesta: str) -> str:
     return limpia
 
 
+def _limpiar_telefono(telefono: str) -> str:
+    """Convierte 5215543503382@s.whatsapp.net → +52 55 4350 3382"""
+    # Quitar @s.whatsapp.net
+    limpio = telefono.split("@")[0]
+    # Quitar prefijo 521 → 52 (México agrega un 1 extra en WhatsApp)
+    if limpio.startswith("521") and len(limpio) == 13:
+        limpio = "52" + limpio[3:]
+    # Formatear con +
+    return f"+{limpio}"
+
+
 def buscar_lead_por_telefono(telefono: str) -> int | None:
     """
     Busca un lead por número de teléfono en la columna C de la pestaña Inbound.
-    Retorna el número de fila (1-indexed) si lo encuentra, None si no.
+    Acepta tanto el formato raw (5215543503382@s.whatsapp.net) como el
+    formato limpio (+525543503382) y retorna la fila si encuentra cualquiera.
     """
     try:
         hoja = _obtener_hoja()
+        # Normalizamos a ambos formatos y hacemos match contra cualquiera de los dos
+        limpio = _limpiar_telefono(telefono)
+        formatos = {telefono, limpio}
         # Columna C = Teléfono (índice 3). Saltar fila 1 (headers).
         telefonos = hoja.col_values(3)
         for i, tel in enumerate(telefonos[1:], start=2):
-            if tel == telefono:
+            if tel in formatos:
                 return i
         return None
     except Exception as e:
@@ -112,7 +127,7 @@ def crear_lead_inicial(telefono: str, primer_mensaje: str) -> bool:
         fila = [
             datetime.now().strftime("%Y-%m-%d %H:%M"),  # Fecha
             "",                       # Nombre
-            telefono,                 # Teléfono
+            _limpiar_telefono(telefono),  # Teléfono
             "",                       # Empresa
             "",                       # Producto Buscado
             "",                       # Presupuesto
@@ -141,6 +156,7 @@ def actualizar_lead(telefono: str, lead: dict) -> bool:
     try:
         fila_num = buscar_lead_por_telefono(telefono)
         hoja = _obtener_hoja()
+        telefono_limpio = _limpiar_telefono(telefono)
 
         if fila_num is None:
             # Fallback: no existe la fila, crearla con todos los datos disponibles
@@ -148,7 +164,7 @@ def actualizar_lead(telefono: str, lead: dict) -> bool:
             fila = [
                 datetime.now().strftime("%Y-%m-%d %H:%M"),
                 lead.get("nombre", ""),
-                telefono,
+                telefono_limpio,
                 lead.get("empresa", ""),
                 lead.get("producto_buscado", ""),
                 lead.get("presupuesto", ""),
@@ -170,7 +186,7 @@ def actualizar_lead(telefono: str, lead: dict) -> bool:
         nuevos_valores = [
             fila_actual[0],  # Fecha (mantener original)
             lead.get("nombre", "") or fila_actual[1],
-            telefono,
+            telefono_limpio,
             lead.get("empresa", "") or fila_actual[3],
             lead.get("producto_buscado", "") or fila_actual[4],
             lead.get("presupuesto", "") or fila_actual[5],
