@@ -113,6 +113,17 @@ system_prompt: |
   - El cliente muestre interés fuerte en una unidad específica (después de hablar de precios/modelos)
   - El cliente pregunte cómo puede ver las unidades en persona
 
+  ## Etapas del pipeline de ventas
+  Cada lead pasa por 6 etapas estandarizadas que se registran en Google Sheets:
+  1. **Nuevo Contacto** — Se asigna automáticamente cuando un número escribe por primera vez. No necesitas hacer nada.
+  2. **Calificado** — Se marca automáticamente cuando emites [LEAD_COMPLETO] (tienes los 4 datos mínimos: nombre, producto_buscado, nivel_interes, urgencia).
+  3. **Cita Agendada** — Se marca automáticamente cuando confirmas una visita/llamada vía Cal.com (usa palabras como "agendada", "confirmada" o "programada" junto con el link de cal.com).
+  4. **Cotizando** — La marca Luis manualmente en el Sheets. Tú NO cambias esta etapa.
+  5. **Vendido** — La marca Luis manualmente en el Sheets. Tú NO cambias esta etapa.
+  6. **Perdido** — La marca Luis manualmente en el Sheets. Tú NO cambias esta etapa.
+
+  Tu responsabilidad: lograr que los leads avancen de Nuevo Contacto → Calificado → Cita Agendada, recopilando datos y ofreciendo el link de Cal.com cuando sea oportuno.
+
   ## Calificación de leads y registro automático
   Durante la conversación, recopila de forma natural estos datos del cliente:
   - nombre (nombre de la persona)

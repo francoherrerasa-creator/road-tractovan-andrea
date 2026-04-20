@@ -212,6 +212,39 @@ def actualizar_lead(telefono: str, lead: dict) -> bool:
         return False
 
 
+ETAPAS_VALIDAS = [
+    "Nuevo Contacto",
+    "Calificado",
+    "Cita Agendada",
+    "Cotizando",
+    "Vendido",
+    "Perdido",
+]
+
+
+def actualizar_etapa(telefono: str, nueva_etapa: str) -> bool:
+    """
+    Actualiza la columna Etapa (J) del lead en la pestaña Inbound.
+    Valida que nueva_etapa esté en las 6 etapas permitidas.
+    Retorna True si actualizó, False si no encontró el lead o etapa inválida.
+    """
+    if nueva_etapa not in ETAPAS_VALIDAS:
+        logger.warning(f"Etapa inválida '{nueva_etapa}'. Permitidas: {ETAPAS_VALIDAS}")
+        return False
+    try:
+        fila_num = buscar_lead_por_telefono(telefono)
+        if fila_num is None:
+            logger.warning(f"No se encontró lead para {telefono}, no se puede actualizar etapa")
+            return False
+        hoja = _obtener_hoja()
+        hoja.update_cell(fila_num, 10, nueva_etapa)  # Columna J = 10 = Etapa
+        logger.info(f"Etapa actualizada a '{nueva_etapa}' para {telefono} (fila {fila_num})")
+        return True
+    except Exception as e:
+        logger.error(f"Error actualizando etapa: {e}")
+        return False
+
+
 def actualizar_lead_parcial(telefono: str, datos: dict) -> bool:
     """Actualiza solo los campos proporcionados en la fila del lead, sin cambiar la etapa."""
     try:

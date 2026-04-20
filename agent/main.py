@@ -7,6 +7,7 @@ Funciona con cualquier proveedor (Whapi, Meta, Twilio) gracias a la capa de prov
 """
 
 import os
+import re
 import logging
 import httpx
 from contextlib import asynccontextmanager
@@ -27,6 +28,7 @@ from agent.sheets import (
     buscar_lead_por_telefono,
     actualizar_lead,
     actualizar_lead_parcial,
+    actualizar_etapa,
 )
 
 load_dotenv()
@@ -139,6 +141,13 @@ async def webhook_verificacion(request: Request):
     return {"status": "ok"}
 
 
+def _es_cita_agendada(respuesta: str) -> bool:
+    """Detecta si la respuesta de Sofía confirma una cita agendada vía Cal.com."""
+    tiene_calcom = "cal.com" in respuesta.lower()
+    palabras_cita = re.search(r"(agendad[ao]|confirmad[ao]|programad[ao])", respuesta, re.IGNORECASE)
+    return bool(tiene_calcom and palabras_cita)
+
+
 @app.post("/webhook")
 @app.post("/webhook/messages")
 async def webhook_handler(request: Request):
@@ -191,6 +200,13 @@ async def webhook_handler(request: Request):
                     except Exception as e:
                         logger.error(f"Error actualizando lead parcialmente: {e}")
                     respuesta = limpiar_respuesta(respuesta)
+
+            # Detectar confirmación de cita agendada vía Cal.com
+            if not lead and _es_cita_agendada(respuesta):
+                try:
+                    actualizar_etapa(msg.telefono, "Cita Agendada")
+                except Exception as e:
+                    logger.error(f"Error actualizando etapa a Cita Agendada: {e}")
 
             # Guardar mensaje del usuario Y respuesta del agente en memoria
             await guardar_mensaje(msg.telefono, "user", msg.texto)

@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agent.brain import generar_respuesta
 from agent.memory import inicializar_db, guardar_mensaje, obtener_historial, limpiar_historial
-from agent.sheets import extraer_lead, limpiar_respuesta, guardar_lead_en_sheets
+from agent.sheets import extraer_lead, limpiar_respuesta, guardar_lead_en_sheets, actualizar_etapa, ETAPAS_VALIDAS
 
 TELEFONO_TEST = "test-local-001"
 
@@ -78,5 +78,42 @@ async def main():
         await guardar_mensaje(TELEFONO_TEST, "assistant", respuesta)
 
 
+def test_actualizar_etapa():
+    """Valida que actualizar_etapa funcione con etapas válidas e inválidas."""
+    print("\n" + "=" * 55)
+    print("   Test: actualizar_etapa")
+    print("=" * 55)
+
+    # Test etapas válidas — solo valida que no lanza excepción
+    # (requiere un lead existente en Sheets para retornar True)
+    telefono_test = "525543503382"
+    for etapa in ETAPAS_VALIDAS:
+        resultado = actualizar_etapa(telefono_test, etapa)
+        estado = "OK" if resultado else "NO ENCONTRADO (esperado si no hay lead en Sheets)"
+        print(f"  [{etapa}] -> {estado}")
+
+    # Test etapa inválida — debe retornar False sin tocar Sheets
+    etapas_invalidas = ["Rechazado", "En Proceso", "", "nuevo contacto"]
+    todas_false = True
+    for etapa in etapas_invalidas:
+        resultado = actualizar_etapa(telefono_test, etapa)
+        if resultado:
+            todas_false = False
+            print(f"  ERROR: '{etapa}' debería retornar False pero retornó True")
+        else:
+            print(f"  ['{etapa}'] -> False (correcto, etapa inválida rechazada)")
+
+    if todas_false:
+        print("\n  PASS: Todas las etapas inválidas fueron rechazadas correctamente")
+    else:
+        print("\n  FAIL: Alguna etapa inválida fue aceptada")
+
+    print()
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "test-etapas":
+        test_actualizar_etapa()
+    else:
+        asyncio.run(main())
