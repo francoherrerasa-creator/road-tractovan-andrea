@@ -17,6 +17,7 @@ from fastapi.responses import PlainTextResponse
 from dotenv import load_dotenv
 
 from agent.brain import generar_respuesta
+from agent.buffer import MessageBuffer
 from agent.memory import inicializar_db, guardar_mensaje, obtener_historial
 from agent.providers import obtener_proveedor
 from agent.sheets import (
@@ -141,10 +142,69 @@ async def webhook_verificacion(request: Request):
     return {"status": "ok"}
 
 
+async def _procesar_mensajes_buffered(telefono: str, mensajes: list[str]):
+    """
+    Callback del buffer: procesa N mensajes acumulados como un solo turno.
+    Guarda cada mensaje individualmente en SQLite para preservar la memoria,
+    luego genera una sola respuesta con Claude usando el mensaje concatenado.
+    """
+    # Obtener historial ANTES de guardar los mensajes nuevos
+    historial = await obtener_historial(telefono)
+
+    # Guardar cada mensaje individual en SQLite (preserva memoria completa)
+    for msg_texto in mensajes:
+        await guardar_mensaje(telefono, "user", msg_texto)
+
+    # Concatenar mensajes en uno solo para Claude
+    mensaje_unificado = "\n".join(mensajes)
+    logger.info(f"[BUFFER] Procesando {len(mensajes)} mensaje(s) para {telefono}: {mensaje_unificado[:100]}...")
+
+    # Generar respuesta con Claude
+    respuesta = await generar_respuesta(mensaje_unificado, historial)
+
+    # Detectar LEAD_COMPLETO
+    lead = extraer_lead(respuesta)
+    if lead:
+        try:
+            actualizar_lead(telefono, lead)
+        except Exception as e:
+            logger.error(f"Error actualizando lead: {e}")
+        respuesta = limpiar_respuesta(respuesta)
+
+    # Detectar actualizaciones parciales de datos
+    if not lead:
+        lead_update = extraer_lead_update(respuesta)
+        if lead_update:
+            try:
+                actualizar_lead_parcial(telefono, lead_update)
+            except Exception as e:
+                logger.error(f"Error actualizando lead parcialmente: {e}")
+            respuesta = limpiar_respuesta(respuesta)
+
+    # Detectar confirmación de cita agendada vía Cal.com
+    if not lead and _es_cita_agendada(respuesta):
+        try:
+            actualizar_etapa(telefono, "Cita Agendada")
+        except Exception as e:
+            logger.error(f"Error actualizando etapa a Cita Agendada: {e}")
+
+    # Guardar respuesta del agente en memoria
+    await guardar_mensaje(telefono, "assistant", respuesta)
+
+    # Enviar respuesta por WhatsApp
+    await proveedor.enviar_mensaje(telefono, respuesta)
+    logger.info(f"Respuesta a {telefono}: {respuesta}")
+
+
+# Buffer de mensajes con debounce
+buffer = MessageBuffer(callback=_procesar_mensajes_buffered)
+
+
 def _es_cita_agendada(respuesta: str) -> bool:
     """Detecta si la respuesta de Sofía confirma una cita agendada vía Cal.com."""
-    tiene_calcom = "cal.com" in respuesta.lower()
-    palabras_cita = re.search(r"(agendad[ao]|confirmad[ao]|programad[ao])", respuesta, re.IGNORECASE)
+    texto = respuesta.lower()
+    tiene_calcom = "cal.com" in texto or "calendar" in texto
+    palabras_cita = re.search(r"(agend|program|reserv|cita|visita|calendari)", texto)
     return bool(tiene_calcom and palabras_cita)
 
 
@@ -153,7 +213,8 @@ def _es_cita_agendada(respuesta: str) -> bool:
 async def webhook_handler(request: Request):
     """
     Recibe mensajes de WhatsApp via el proveedor configurado.
-    Procesa el mensaje, genera respuesta con Claude y la envía de vuelta.
+    Guarda cada mensaje en SQLite inmediatamente, pero acumula en buffer
+    y espera 30s de silencio antes de generar una sola respuesta con Claude.
     """
     try:
         # Parsear webhook — el proveedor normaliza el formato
@@ -166,56 +227,16 @@ async def webhook_handler(request: Request):
 
             logger.info(f"Mensaje de {msg.telefono}: {msg.texto}")
 
-            # Si es un número nuevo, crear fila inicial en Sheets.
-            # Envuelto en try/except: si Sheets falla, el chat sigue funcionando.
+            # Si es un número nuevo, crear fila inicial en Sheets
             try:
                 if buscar_lead_por_telefono(msg.telefono) is None:
                     crear_lead_inicial(msg.telefono, msg.texto)
             except Exception as e:
                 logger.error(f"Error verificando/creando lead inicial: {e}")
 
-            # Obtener historial ANTES de guardar el mensaje actual
-            # (brain.py agrega el mensaje actual, evitando duplicados)
-            historial = await obtener_historial(msg.telefono)
-
-            # Generar respuesta con Claude
-            respuesta = await generar_respuesta(msg.texto, historial)
-
-            # Si Sofía emitió LEAD_COMPLETO, actualizar la fila con los datos finales.
-            # También envuelto en try/except por seguridad.
-            lead = extraer_lead(respuesta)
-            if lead:
-                try:
-                    actualizar_lead(msg.telefono, lead)
-                except Exception as e:
-                    logger.error(f"Error actualizando lead: {e}")
-                respuesta = limpiar_respuesta(respuesta)
-
-            # Detectar actualizaciones parciales de datos
-            if not lead:  # Solo si no hubo LEAD_COMPLETO
-                lead_update = extraer_lead_update(respuesta)
-                if lead_update:
-                    try:
-                        actualizar_lead_parcial(msg.telefono, lead_update)
-                    except Exception as e:
-                        logger.error(f"Error actualizando lead parcialmente: {e}")
-                    respuesta = limpiar_respuesta(respuesta)
-
-            # Detectar confirmación de cita agendada vía Cal.com
-            if not lead and _es_cita_agendada(respuesta):
-                try:
-                    actualizar_etapa(msg.telefono, "Cita Agendada")
-                except Exception as e:
-                    logger.error(f"Error actualizando etapa a Cita Agendada: {e}")
-
-            # Guardar mensaje del usuario Y respuesta del agente en memoria
-            await guardar_mensaje(msg.telefono, "user", msg.texto)
-            await guardar_mensaje(msg.telefono, "assistant", respuesta)
-
-            # Enviar respuesta por WhatsApp via el proveedor
-            await proveedor.enviar_mensaje(msg.telefono, respuesta)
-
-            logger.info(f"Respuesta a {msg.telefono}: {respuesta}")
+            # Agregar al buffer — el timer de debounce se encarga del resto
+            # (el callback guarda cada mensaje en SQLite antes de procesar)
+            await buffer.agregar(msg.telefono, msg.texto)
 
         return {"status": "ok"}
 

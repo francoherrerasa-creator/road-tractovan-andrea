@@ -111,9 +111,117 @@ def test_actualizar_etapa():
     print()
 
 
+def test_es_cita_agendada():
+    """Valida que _es_cita_agendada detecte correctamente mensajes con link de Cal.com + palabras de agendamiento."""
+    from agent.main import _es_cita_agendada
+
+    print("\n" + "=" * 55)
+    print("   Test: _es_cita_agendada")
+    print("=" * 55)
+
+    # Casos que DEBEN retornar True
+    casos_true = [
+        "Te comparto nuestro calendario para que elijas el horario: https://cal.com/road-tractovan",
+        "Aquí puedes agendar: cal.com/road-tractovan",
+        "Reserva tu visita en https://cal.com/road-tractovan",
+        "Tu cita queda agendada, aquí el link: https://cal.com/road-tractovan",
+        "Te comparto nuestro calendario para agendar tu visita: https://cal.com/road-tractovan",
+        "Programa tu cita aquí: cal.com/road-tractovan",
+    ]
+
+    # Casos que DEBEN retornar False
+    casos_false = [
+        "Mi número es 5555555555",
+        "Tenemos varios modelos disponibles",
+        "Visita nuestras instalaciones en Tepotzotlán",
+        "Puedes agendar una llamada conmigo mañana",
+        "Revisa cal.com para más info",
+    ]
+
+    todas_ok = True
+
+    print("\n  Casos TRUE (deben detectar cita):")
+    for caso in casos_true:
+        resultado = _es_cita_agendada(caso)
+        estado = "PASS" if resultado else "FAIL"
+        if not resultado:
+            todas_ok = False
+        print(f"    [{estado}] {caso[:70]}...")
+
+    print("\n  Casos FALSE (no deben detectar cita):")
+    for caso in casos_false:
+        resultado = _es_cita_agendada(caso)
+        estado = "PASS" if not resultado else "FAIL"
+        if resultado:
+            todas_ok = False
+        print(f"    [{estado}] {caso[:70]}...")
+
+    print()
+    if todas_ok:
+        print("  RESULTADO: PASS — Todos los casos correctos")
+    else:
+        print("  RESULTADO: FAIL — Hay casos incorrectos")
+    print()
+    return todas_ok
+
+
+async def test_buffer():
+    """Valida que el buffer acumule mensajes y dispare el callback con debounce."""
+    import os
+    os.environ["DEBOUNCE_SECONDS"] = "1"  # 1 segundo para test rápido
+
+    # Reimportar con el nuevo valor
+    from agent.buffer import MessageBuffer
+
+    print("\n" + "=" * 55)
+    print("   Test: MessageBuffer (debounce)")
+    print("=" * 55)
+
+    resultados = {}
+
+    async def callback_test(telefono, mensajes):
+        resultados[telefono] = mensajes
+
+    buf = MessageBuffer(callback=callback_test)
+    buf._buffers = {}  # Reset
+
+    # Simular 3 mensajes rápidos del mismo teléfono
+    await buf.agregar("5551234567", "Hola")
+    await buf.agregar("5551234567", "Cómo estás?")
+    await buf.agregar("5551234567", "Busco un tracto")
+
+    # Esperar a que expire el timer (1s + margen)
+    await asyncio.sleep(1.5)
+
+    if "5551234567" in resultados:
+        msgs = resultados["5551234567"]
+        if msgs == ["Hola", "Cómo estás?", "Busco un tracto"]:
+            print("  [PASS] 3 mensajes acumulados y procesados como un solo turno")
+        else:
+            print(f"  [FAIL] Mensajes inesperados: {msgs}")
+    else:
+        print("  [FAIL] Callback no fue llamado")
+
+    # Simular mensaje de otro teléfono (no debe mezclar)
+    resultados.clear()
+    await buf.agregar("5559999999", "Otro cliente")
+    await asyncio.sleep(1.5)
+
+    if resultados.get("5559999999") == ["Otro cliente"]:
+        print("  [PASS] Teléfonos distintos se procesan por separado")
+    else:
+        print(f"  [FAIL] Resultado inesperado: {resultados}")
+
+    print()
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "test-etapas":
         test_actualizar_etapa()
+    elif len(sys.argv) > 1 and sys.argv[1] == "test-cita":
+        test_es_cita_agendada()
+    elif len(sys.argv) > 1 and sys.argv[1] == "test-buffer":
+        asyncio.run(test_buffer())
     else:
         asyncio.run(main())
