@@ -215,6 +215,50 @@ async def test_buffer():
     print()
 
 
+def test_config_rendering():
+    """Valida que el system prompt se renderice correctamente con las variables de business.yaml."""
+    from agent.config_loader import get_system_prompt, get_fallback_message, get_error_message, load_business_config
+
+    print("\n" + "=" * 55)
+    print("   Test: Config Rendering (template + variables)")
+    print("=" * 55)
+
+    business = load_business_config()
+    rendered = get_system_prompt()
+    fallback = get_fallback_message()
+    error = get_error_message()
+
+    checks = [
+        (business["bot_name"] in rendered, f"bot_name '{business['bot_name']}' en prompt"),
+        (business["company_name"] in rendered, f"company_name '{business['company_name']}' en prompt"),
+        (business["cal_link"] in rendered, "cal_link en prompt"),
+        (business["location_short"] in rendered, f"location '{business['location_short']}' en prompt"),
+        (business["phone"] in rendered, "phone en prompt"),
+        ("{{" not in rendered, "sin placeholders {{ sin renderizar"),
+        ("{%" not in rendered, "sin bloques {{% sin renderizar"),
+        (len(rendered) > 3000, f"contenido sustancial ({len(rendered)} chars)"),
+        ("LEAD_COMPLETO" in rendered, "formato LEAD_COMPLETO presente"),
+        ("LEAD_UPDATE" in rendered, "formato LEAD_UPDATE presente"),
+        (len(fallback) > 20, "fallback_message renderizado"),
+        (len(error) > 20, "error_message renderizado"),
+    ]
+
+    todas_ok = True
+    for ok, msg in checks:
+        estado = "PASS" if ok else "FAIL"
+        if not ok:
+            todas_ok = False
+        print(f"  [{estado}] {msg}")
+
+    print()
+    if todas_ok:
+        print("  RESULTADO: PASS — Config rendering correcto")
+    else:
+        print("  RESULTADO: FAIL — Hay problemas en el rendering")
+    print()
+    return todas_ok
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "test-etapas":
@@ -223,5 +267,7 @@ if __name__ == "__main__":
         test_es_cita_agendada()
     elif len(sys.argv) > 1 and sys.argv[1] == "test-buffer":
         asyncio.run(test_buffer())
+    elif len(sys.argv) > 1 and sys.argv[1] == "test-config":
+        test_config_rendering()
     else:
         asyncio.run(main())

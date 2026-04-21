@@ -1,0 +1,151 @@
+# EJEMPLO de cómo se vería config/business.yaml para una industria distinta — NO se carga por defecto
+# Para usarlo: renombra este archivo a business.yaml y reemplaza el actual.
+
+business:
+
+  # ─── Identidad del bot ────────────────────────────────────
+  bot_name: "Ana"
+  bot_personality: "profesional, empática y experta en equipo médico"
+  bot_personality_extended: "Eres confiable, paciente y detallista. Quieres ayudar al cliente a encontrar el equipo médico ideal para su clínica o consultorio."
+  first_message_example: "Hola, soy Ana de MedEquip México. Qué gusto saludarte, cuéntame, ¿en qué te puedo ayudar hoy?"
+
+  # ─── Empresa ──────────────────────────────────────────────
+  company_name: "MedEquip México"
+  company_description: >-
+    MedEquip México es distribuidora autorizada de equipo médico con 8 años
+    de experiencia. Ofrecemos equipo de diagnóstico, mobiliario clínico,
+    instrumental quirúrgico y consumibles. Contamos con showroom en
+    Polanco, CDMX, donde los clientes pueden ver y probar el equipo.
+  typical_customers: >-
+    Nuestros clientes son médicos, clínicas privadas, consultorios,
+    hospitales pequeños y laboratorios que buscan equipo de calidad
+    con garantía y soporte técnico.
+
+  # ─── Capacidades del agente ───────────────────────────────
+  capabilities:
+    - "**Responder preguntas frecuentes**: catálogo de equipos, precios, marcas, especificaciones, garantías, proceso de compra y financiamiento."
+    - "**Agendar citas**: ayudar al cliente a programar una visita al showroom en Polanco para ver el equipo en persona."
+    - "**Calificar leads de venta**: identificar necesidades del cliente (especialidad, equipo requerido, presupuesto, urgencia) y conectarlo con un asesor."
+
+  # ─── Inventario ───────────────────────────────────────────
+  inventory_categories:
+    - name: "ultrasonidos"
+      label: "Equipos de ultrasonido disponibles"
+      table: |
+        | Modelo | Marca | Tipo | Garantía | Precio |
+        |--------|-------|------|----------|--------|
+        | SonoAce R7 | Samsung Medison | Portátil | 2 años | $185,000 |
+        | Voluson E8 | GE Healthcare | De piso | 3 años | $420,000 |
+        | CX50 | Philips | Portátil | 2 años | $280,000 |
+      price_range: "$185,000 — $420,000 MXN"
+      note: ""
+    - name: "mobiliario"
+      label: "Mobiliario clínico"
+      table: |
+        | Producto | Material | Precio |
+        |----------|----------|--------|
+        | Camilla eléctrica 3 secciones | Acero inoxidable | $28,000 |
+        | Mesa de exploración | Acero con vinil | $15,000 |
+        | Lámpara quirúrgica LED | Aluminio | $35,000 |
+      price_range: "$15,000 — $35,000 MXN"
+      note: ""
+
+  # ─── Garantía ─────────────────────────────────────────────
+  warranty_name: "Garantía MedEquip"
+  warranty_points:
+    - "Cobertura completa de 2 a 3 años según equipo"
+    - "Soporte técnico incluido"
+    - "Refacciones originales garantizadas"
+    - "Capacitación de uso incluida"
+
+  # ─── Proceso de compra ────────────────────────────────────
+  purchase_process:
+    - "Asesoría personalizada según especialidad"
+    - "Demostración en showroom o en consultorio"
+    - "Cotización formal con opciones de financiamiento"
+    - "Instalación y calibración incluidas"
+    - "Capacitación del personal"
+
+  # ─── Ventajas competitivas ────────────────────────────────
+  competitive_advantages:
+    - "8 años de experiencia en equipo médico"
+    - "Distribuidor autorizado de marcas líderes"
+    - "Showroom en Polanco para demostraciones"
+    - "Financiamiento hasta 24 meses"
+    - "Soporte técnico postventa incluido"
+    - "Instalación y capacitación sin costo"
+
+  # ─── Contacto ─────────────────────────────────────────────
+  address: "Av. Presidente Masaryk 123, Polanco, 11560 CDMX"
+  location_short: "Polanco"
+  phone: "55 1234 5678"
+  email: "[email protected]"
+  website: "www.medequip.mx"
+  social_media: "Facebook: medequip.mx | Instagram: @medequipmx"
+
+  # ─── Horario ──────────────────────────────────────────────
+  bot_hours: "Atiendes 24/7 de forma automática"
+  human_hours: "Lunes a Viernes 9am a 6pm, Sábados 10am a 2pm (hora de México)"
+  out_of_hours_message: "Gracias por escribirnos. Un asesor de MedEquip te contactará el siguiente día hábil en horario de 9am a 6pm."
+
+  # ─── Citas / Agendado ────────────────────────────────────
+  cal_link: "https://cal.com/medequip-mx"
+  visit_location: "showroom en Polanco"
+  cal_message_example: "¡Con gusto! Te comparto nuestro calendario para que elijas el horario que mejor te funcione: https://cal.com/medequip-mx — ahí puedes agendar tu visita al showroom. Te esperamos."
+  visit_offer_examples:
+    - "Si quieres, puedes venir al showroom en Polanco a ver el equipo en persona. Te lo mostramos sin compromiso. ¿Te late agendar una visita?"
+    - "La mejor manera de decidir es viéndolo y probándolo. ¿Quieres que te agende una visita al showroom?"
+
+  # ─── Pipeline de ventas ───────────────────────────────────
+  pipeline_manual_owner: "Carlos"
+  pipeline_stages:
+    - id: "Nuevo Contacto"
+      auto: true
+      description: "Se asigna automáticamente cuando un número escribe por primera vez."
+    - id: "Calificado"
+      auto: true
+      description: "Se marca automáticamente cuando emites [LEAD_COMPLETO]."
+    - id: "Cita Agendada"
+      auto: true
+      description: "Se marca automáticamente cuando envías el link de cal.com."
+    - id: "Cotizando"
+      auto: false
+      description: ""
+    - id: "Vendido"
+      auto: false
+      description: ""
+    - id: "Perdido"
+      auto: false
+      description: ""
+
+  # ─── Calificación de leads ────────────────────────────────
+  qualification_fields:
+    - field: "nombre"
+      label: "nombre del doctor o encargado"
+      required: true
+    - field: "producto_buscado"
+      label: "qué equipo necesita: ultrasonido, mobiliario, instrumental, etc."
+      required: true
+    - field: "nivel_interes"
+      label: "alto/medio/bajo"
+      required: true
+    - field: "urgencia"
+      label: "cuándo lo necesita: esta semana, este mes, explorando"
+      required: true
+    - field: "empresa"
+      label: "nombre de la clínica o consultorio"
+      required: false
+    - field: "presupuesto"
+      label: "rango de presupuesto"
+      required: false
+    - field: "email"
+      label: "correo de contacto"
+      required: false
+
+  # ─── Mensajes del sistema ─────────────────────────────────
+  fallback_message: "Disculpa, no entendí tu mensaje. ¿Podrías reformularlo? Estoy aquí para ayudarte con información sobre equipo médico, agendar una visita o conectarte con un asesor."
+  error_message: "Lo siento, estoy teniendo problemas técnicos. Por favor intenta de nuevo en unos minutos o llámanos al 55 1234 5678."
+
+metadata:
+  creado: "2026-04-20"
+  version: "2.0"

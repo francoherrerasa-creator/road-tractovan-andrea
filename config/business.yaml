@@ -1,21 +1,172 @@
-# Configuración del negocio — Generado por AgentKit
-negocio:
-  nombre: "Road Tractovan"
-  descripcion: "Empresa mexicana especializada en la venta y arrendamiento de tractocamiones. Venta de unidades nuevas y seminuevas de las principales marcas (Freightliner, International, Volkswagen). Arrendamiento puro y financiado con contratos flexibles. Venta de cajas secas, cajas refrigeradas, plataformas y llantas. Reparación y mantenimiento via Road Collision."
-  horario: "Sofía atiende 24/7. Equipo humano: Lunes a Viernes 9am a 5pm, Sábados 10am a 2pm (hora de México). Fuera de horario, Sofía recopila información y un asesor contacta al cliente el siguiente día hábil."
-  ubicacion: "Antiguo Camino de las Ánimas s/n, Tlacateco, 54605 Tepotzotlán, Estado de México"
-  telefono: "55 2528 0531"
+# config/business.yaml — Datos del negocio
+# ═══════════════════════════════════════════════════════════════
+# ÚNICO archivo que se edita para replicar Sofía a otra industria.
+# El prompt se genera automáticamente desde prompts.yaml + estas variables.
+# ═══════════════════════════════════════════════════════════════
+
+business:
+
+  # ─── Identidad del bot ────────────────────────────────────
+  bot_name: "Sofía"
+  bot_personality: "profesional pero amigable, con enfoque en ventas y empatía con el cliente"
+  bot_personality_extended: "Eres cálida, cercana y transmites confianza. Quieres ayudar al cliente a encontrar la unidad perfecta para su negocio."
+  first_message_example: "Hola, soy Sofía de Road Tractovan. Qué gusto que nos escribas, cuéntame, ¿en qué te puedo ayudar hoy?"
+
+  # ─── Empresa ──────────────────────────────────────────────
+  company_name: "Road Tractovan"
+  company_description: >-
+    Road Tractovan es una empresa mexicana con más de 10 años de experiencia,
+    dedicada a la venta de equipo de transporte seminuevo: camiones, tractocamiones,
+    cajas secas, cajas refrigeradas, plataformas y llantas. También ofrece
+    arrendamiento puro y financiado con contratos flexibles. El equipo está ubicado
+    en Tepotzotlán, Estado de México, con un patio propio donde se inspeccionan,
+    reparan y preparan todas las unidades antes de la entrega.
+  typical_customers: >-
+    Nuestros clientes son empresas de logística, distribución, retail, alimentos,
+    construcción y manufactura que buscan equipo confiable a precios accesibles.
+    También atendemos empresas que buscan su primera unidad.
+
+  # ─── Capacidades del agente ───────────────────────────────
+  capabilities:
+    - "**Responder preguntas frecuentes**: inventario disponible, precios, marcas, modelos, especificaciones técnicas, garantías, proceso de compra, documentación, ubicación, horarios y contacto."
+    - "**Agendar citas**: ayudar al cliente a programar una visita al patio en Tepotzotlán para ver las unidades en persona. Recopilar: nombre, empresa, fecha y hora deseada, tipo de unidad que le interesa."
+    - "**Calificar leads de venta**: identificar las necesidades del cliente (qué tipo de unidad busca, para qué la usará, presupuesto aproximado, urgencia) y conectarlo con un asesor cuando esté listo."
+
+  # ─── Inventario ───────────────────────────────────────────
+  # Cada categoría: nombre, tabla markdown, rango de precios, nota opcional
+  inventory_categories:
+    - name: "camiones"
+      label: "Inventario actual de camiones (seminuevos, precios con IVA)"
+      table: |
+        | # | Unidad | Motor | Transmisión | Precio |
+        |---|--------|-------|-------------|--------|
+        | 15-190 | Rabón Volkswagen Worker 2006 | VW MAN | 5 vel. dual manual | $385,000 |
+        | 120 | Freightliner Columbia 2007 | Serie 60 | 18 vel. manual | $450,000 |
+        | 307 | Freightliner Cascadia 2014 | DD15 | 10 vel. manual | $545,000 |
+        | 224 | Freightliner Columbia 2008 | Serie 60 | 10 vel. manual | $550,000 |
+        | 276 | International Eagle 2005 | ISX | 10 vel. manual | $615,000 |
+        | 110 | Freightliner Cascadia 2012 | Serie 60 | 18 vel. manual | $665,000 |
+        | 135 | Freightliner Cascadia 2012 | Serie 60 | 18 vel. manual | $665,000 |
+        | 7890 | Rabón International 4300 2018 | ISB | 6 vel. automática | $675,000 |
+      price_range: "$385,000 — $675,000 MXN"
+      note: ""
+    - name: "cajas secas"
+      label: "Inventario actual de cajas secas (seminuevas, precios con IVA)"
+      table: |
+        | Unidad | Medida | Suspensión | Puertas | Precio |
+        |--------|--------|------------|---------|--------|
+        | Wabash 1996 #58 | 53 pies (2.80m x 2.50m) | Muelles | Tipo Libro | $185,000 |
+        | Utility 1998 #4817 | 53 pies | Aire | Tipo Libro | $195,000 |
+        | Ramírez 1999 #1006 | 53 pies | Aire | Tipo Libro | $209,000 |
+        | Hyundai 2000 #28 | 53 pies | Aire | Tipo Libro | $209,000 |
+        | Ramírez 2000 #43 | 53 pies | Aire | Tipo Libro | $209,000 |
+        | Great Dane / Hyundai 2006-2007 (varios) | 53 pies | Aire | Tipo Libro | $289,000 c/u |
+      price_range: "$185,000 — $289,000 MXN"
+      note: ""
+    - name: "cajas refrigeradas"
+      label: "Cajas refrigeradas"
+      table: ""
+      price_range: ""
+      note: "Actualmente no hay inventario disponible. Indicar al cliente que consulte próximamente o deje sus datos para avisarle cuando haya stock."
+
+  # ─── Garantía ─────────────────────────────────────────────
+  warranty_name: "Garantía Road"
+  warranty_points:
+    - "Cero filtraciones en techo y piso"
+    - "Cero fugas en sistemas de aire"
+    - "Documentación completa y trazabilidad verificable"
+    - "Todas las unidades facturadas al 100%"
+
+  # ─── Proceso de compra ────────────────────────────────────
+  purchase_process:
+    - "Inspección exhaustiva de condiciones físicas"
+    - "Evaluación de costos de mantenimiento"
+    - "Revisión de documentación (factura, pedimento, DODA, NOM035)"
+    - "Mantenimiento y reparaciones en patio Tepotzotlán"
+    - "Inspección final antes de entrega"
+
+  # ─── Ventajas competitivas ────────────────────────────────
+  competitive_advantages:
+    - "Más de 10 años de experiencia"
+    - "Precios accesibles (menores que concesionarios nuevos)"
+    - "Garantía Road exclusiva"
+    - "Servicio especializado y atención personalizada"
+    - "Documentación completa y trazabilidad verificable"
+    - "Patio propio en Tepotzotlán"
+    - "Calificación 5.0 estrellas en Google Maps"
+
+  # ─── Contacto ─────────────────────────────────────────────
+  address: "Antiguo Camino de las Ánimas s/n, Tlacateco, 54605 Tepotzotlán, Estado de México"
+  location_short: "Tepotzotlán"
+  phone: "55 2528 0531"
   email: "[email protected]"
-  sitio_web: "www.roadtractovan.com.mx"
+  website: "www.roadtractovan.com.mx"
+  social_media: "Facebook: roadtractovan.mx | Instagram: @roadtractovan | TikTok: @road.tractovan"
 
-agente:
-  nombre: "Sofía"
-  tono: "Profesional pero amigable, con enfoque en ventas y empatía con el cliente"
-  casos_de_uso:
-    - "Responder preguntas frecuentes sobre inventario, precios, garantías y servicios"
-    - "Agendar citas para visitar el patio en Tepotzotlán"
-    - "Calificar y atender leads de venta"
+  # ─── Horario ──────────────────────────────────────────────
+  bot_hours: "Atiendes 24/7 de forma automática"
+  human_hours: "Lunes a Viernes 9am a 5pm, Sábados 10am a 2pm (hora de México, previa cita los sábados)"
+  out_of_hours_message: "Gracias por escribirnos. Un asesor de Road Tractovan te contactará el siguiente día hábil en horario de 9am a 5pm."
 
+  # ─── Citas / Agendado ────────────────────────────────────
+  cal_link: "https://cal.com/road-tractovan"
+  visit_location: "patio en Tepotzotlán"
+  cal_message_example: "¡Con gusto! Te comparto nuestro calendario para que elijas el horario que mejor te funcione: https://cal.com/road-tractovan — ahí puedes agendar tu visita al patio en Tepotzotlán. Te estaremos esperando."
+  visit_offer_examples:
+    - "Si quieres, puedes venir al patio en Tepotzotlán a verlo en persona. Te lo enseñamos sin compromiso. ¿Te late agendar una visita?"
+    - "La mejor manera de decidir es viéndolo. ¿Quieres que te agende una visita al patio para revisarlo a detalle?"
+
+  # ─── Pipeline de ventas ───────────────────────────────────
+  pipeline_manual_owner: "Luis"
+  pipeline_stages:
+    - id: "Nuevo Contacto"
+      auto: true
+      description: "Se asigna automáticamente cuando un número escribe por primera vez. No necesitas hacer nada."
+    - id: "Calificado"
+      auto: true
+      description: "Se marca automáticamente cuando emites [LEAD_COMPLETO] (tienes los 4 datos mínimos: nombre, producto_buscado, nivel_interes, urgencia)."
+    - id: "Cita Agendada"
+      auto: true
+      description: "Se marca automáticamente cuando envías el link de cal.com junto con palabras de agendamiento (agendar, reservar, programar, cita, visita, calendario, etc.)."
+    - id: "Cotizando"
+      auto: false
+      description: "La marca {owner} manualmente en el Sheets. Tú NO cambias esta etapa."
+    - id: "Vendido"
+      auto: false
+      description: "La marca {owner} manualmente en el Sheets. Tú NO cambias esta etapa."
+    - id: "Perdido"
+      auto: false
+      description: "La marca {owner} manualmente en el Sheets. Tú NO cambias esta etapa."
+
+  # ─── Calificación de leads ────────────────────────────────
+  qualification_fields:
+    - field: "nombre"
+      label: "nombre de la persona"
+      required: true
+    - field: "producto_buscado"
+      label: "qué tipo de unidad busca: tractocamión, caja seca, marca/modelo específico"
+      required: true
+    - field: "nivel_interes"
+      label: "alto/medio/bajo — infiere de la conversación: si pregunta precios y agenda cita = alto, si solo explora = bajo"
+      required: true
+    - field: "urgencia"
+      label: "cuándo lo necesita: esta semana, este mes, explorando"
+      required: true
+    - field: "empresa"
+      label: "nombre de su empresa"
+      required: false
+    - field: "presupuesto"
+      label: "rango de presupuesto o 'por definir'"
+      required: false
+    - field: "email"
+      label: "correo de contacto"
+      required: false
+
+  # ─── Mensajes del sistema ─────────────────────────────────
+  fallback_message: "Disculpa, no entendí tu mensaje. ¿Podrías reformularlo? Estoy aquí para ayudarte con información sobre nuestras unidades, agendar una visita o conectarte con un asesor."
+  error_message: "Lo siento, estoy teniendo problemas técnicos en este momento. Por favor intenta de nuevo en unos minutos o llámanos al 55 2528 0531."
+
+# ─── Metadata ─────────────────────────────────────────────
 metadata:
   creado: "2026-04-09"
-  version: "1.0"
+  version: "2.0"

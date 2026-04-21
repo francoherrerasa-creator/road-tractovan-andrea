@@ -7,44 +7,17 @@ y genera respuestas usando la API de Anthropic Claude.
 """
 
 import os
-import yaml
 import logging
 from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
+
+from agent.config_loader import get_system_prompt, get_error_message, get_fallback_message
 
 load_dotenv()
 logger = logging.getLogger("agentkit")
 
 # Cliente de Anthropic
 client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-
-
-def cargar_config_prompts() -> dict:
-    """Lee toda la configuración desde config/prompts.yaml."""
-    try:
-        with open("config/prompts.yaml", "r", encoding="utf-8") as f:
-            return yaml.safe_load(f) or {}
-    except FileNotFoundError:
-        logger.error("config/prompts.yaml no encontrado")
-        return {}
-
-
-def cargar_system_prompt() -> str:
-    """Lee el system prompt desde config/prompts.yaml."""
-    config = cargar_config_prompts()
-    return config.get("system_prompt", "Eres un asistente útil. Responde en español.")
-
-
-def obtener_mensaje_error() -> str:
-    """Retorna el mensaje de error configurado en prompts.yaml."""
-    config = cargar_config_prompts()
-    return config.get("error_message", "Lo siento, estoy teniendo problemas técnicos. Por favor intenta de nuevo en unos minutos.")
-
-
-def obtener_mensaje_fallback() -> str:
-    """Retorna el mensaje de fallback configurado en prompts.yaml."""
-    config = cargar_config_prompts()
-    return config.get("fallback_message", "Disculpa, no entendí tu mensaje. ¿Podrías reformularlo?")
 
 
 async def generar_respuesta(mensaje: str, historial: list[dict]) -> str:
@@ -60,9 +33,9 @@ async def generar_respuesta(mensaje: str, historial: list[dict]) -> str:
     """
     # Si el mensaje es muy corto o vacío, usar fallback
     if not mensaje or len(mensaje.strip()) < 2:
-        return obtener_mensaje_fallback()
+        return get_fallback_message()
 
-    system_prompt = cargar_system_prompt()
+    system_prompt = get_system_prompt()
 
     # Construir mensajes para la API
     mensajes = []
@@ -92,4 +65,4 @@ async def generar_respuesta(mensaje: str, historial: list[dict]) -> str:
 
     except Exception as e:
         logger.error(f"Error Claude API: {e}")
-        return obtener_mensaje_error()
+        return get_error_message()
